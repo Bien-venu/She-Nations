@@ -12,17 +12,22 @@ class Opportunity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
 
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='opportunities'
+    )
+
     def __str__(self):
         return self.title
 
     class Meta:
         ordering = ['-deadline', 'title']
 
-
 class Application(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     opportunity = models.ForeignKey(Opportunity, on_delete=models.CASCADE)
-    status = models.CharField(max_length=100)
+    status = models.CharField(max_length=100, default='pending') 
     date_applied = models.DateField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
