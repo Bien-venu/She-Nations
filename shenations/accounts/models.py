@@ -60,3 +60,17 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.name}'s Profile"
+
+
+class Booking(models.Model):
+    mentor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentor_bookings'
+    )
+    mentee = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentee_bookings'
+    )
+    day = models.DateField()  # only date, no time
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.mentee} booked {self.mentor} for {self.day}"

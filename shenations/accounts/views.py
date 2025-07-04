@@ -211,3 +211,25 @@ class UserProfileUpdateView(APIView):
             serializer.save()
             return Response({"detail": "Profile updated successfully", "profile": serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from .serializers import BookingCreateSerializer
+
+class BookMentorView(generics.CreateAPIView):
+    serializer_class = BookingCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(
+            {
+                "message": "Booking successfully created.",
+                "booking": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )

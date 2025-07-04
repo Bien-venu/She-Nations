@@ -99,3 +99,16 @@ class MentorSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'profile') and obj.profile.skills:
             return [skill.strip() for skill in obj.profile.skills.split(',') if skill.strip()]
         return []
+from rest_framework import serializers
+from .models import Booking
+
+from rest_framework import serializers
+
+class BookingCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = ['mentor', 'day']
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        return Booking.objects.create(mentee=user, **validated_data)
