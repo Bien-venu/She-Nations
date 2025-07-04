@@ -148,3 +148,18 @@ class ApplicationDetailView(APIView):
         application = get_object_or_404(Application, pk=pk, user=request.user)
         serializer = ApplicationSerializer(application)
         return Response(serializer.data)
+
+
+
+class MyOpportunityApplicationsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        my_opportunities = Opportunity.objects.filter(created_by=request.user)
+        applications = Application.objects.filter(opportunity__in=my_opportunities)
+        serializer = ApplicationSerializer(applications, many=True)
+        return Response({
+            "success": True,
+            "message": f"You have received {applications.count()} application(s) for your posted opportunities.",
+            "applications": serializer.data
+        }, status=status.HTTP_200_OK)
