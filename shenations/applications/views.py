@@ -101,13 +101,16 @@ class ApplicationListCreateView(APIView):
 
     def post(self, request, opportunity_pk):
         data = request.data.copy()
-        data['user'] = request.user.id
         data['opportunity'] = opportunity_pk
-        serializer = ApplicationSerializer(data=data)
+        serializer = ApplicationSerializer(data=data, context={'request': request})
+
         if serializer.is_valid():
             serializer.save(user=request.user)
-            serializer.save()
-            return Response({"detail": "Application submitted successfully", "application": serializer.data}, status=status.HTTP_201_CREATED)
+            return Response({
+                "detail": "Application submitted successfully",
+                "application": serializer.data
+            }, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -116,5 +119,9 @@ class ApplicationDetailView(APIView):
 
     def get(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
+
+        if application.user != request.user and not request.user.is_staff:
+            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = ApplicationSerializer(application)
         return Response(serializer.data)

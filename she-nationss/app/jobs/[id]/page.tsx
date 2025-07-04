@@ -1,16 +1,18 @@
 "use client";
 
+import React, { use } from "react"; // <-- import use
 import { JobDetailsHeader } from "@/components/jobs/job-details-header";
 import { JobDetailsContent } from "@/components/jobs/job-details-content";
 import { JobDetailsSidebar } from "@/components/jobs/job-details-sidebar";
 import { AuthGuard } from "@/components/auth/auth-guard";
 
 interface JobPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>; // params is now a Promise
 }
 
 function JobPage({ params }: JobPageProps) {
-  const { id } = params;
+  const paramsResolved = use(params); // unwrap the Promise
+  const { id } = paramsResolved;
 
   return (
     <AuthGuard>

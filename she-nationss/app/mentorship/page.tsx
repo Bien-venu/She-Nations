@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,69 +14,47 @@ import { MentorGrid } from "@/components/mentorship/mentor-grid";
 
 function MentorshipPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [mentors, setMentors] = useState([]);
 
-  // Mock mentor data - replace with API data
-  const mentors = [
-    {
-      id: "1",
-      name: "Dr. Emily Chen",
-      title: "Senior Software Engineer",
-      company: "TechCorp Inc.",
-      category: "Engineering",
-      rating: 4.9,
-      sessions: 45,
-      avatar: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: "2",
-      name: "Maria Rodriguez",
-      title: "Marketing Manager",
-      company: "Global Marketing Solutions",
-      category: "Marketing",
-      rating: 4.7,
-      sessions: 32,
-      avatar: "/placeholder.svg?height=80&width=80",
-    },
-    {
-      id: "3",
-      name: "David Lee",
-      title: "Business Consultant",
-      company: "Strategic Consulting Group",
-      category: "Business",
-      rating: 4.8,
-      sessions: 56,
-      avatar: "/placeholder.svg?height=80&width=80",
-    },
-  ];
+  const categories = ["Engineering", "Marketing", "Business", "Education"];
 
-  const filteredMentors = mentors.filter((mentor) => {
+  useEffect(() => {
+    fetch("http://localhost:8082/api/auth/mentors/")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched mentors:", data);
+        setMentors(data);
+      })
+      .catch((err) => console.error("Failed to fetch mentors", err));
+  }, []);
+
+  const filteredMentors = mentors.filter((mentor: any) => {
     const matchesSearch =
       mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mentor.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mentor.company.toLowerCase().includes(searchQuery.toLowerCase());
+      (mentor.company &&
+        mentor.company.toLowerCase().includes(searchQuery.toLowerCase()));
+
     const matchesCategory =
-      !categoryFilter || mentor.category === categoryFilter;
+      categoryFilter === "all" || !categoryFilter
+        ? true
+        : mentor.category === categoryFilter;
+
     return matchesSearch && matchesCategory;
   });
-
-  const categories = ["Engineering", "Marketing", "Business"];
 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Find a Mentor
-              </h1>
-              <p className="text-gray-600">
-                Connect with experienced professionals for guidance and support
-              </p>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Find a Mentor
+          </h1>
+          <p className="text-gray-600">
+            Connect with experienced professionals for guidance and support
+          </p>
         </div>
 
         {/* Search and Filters */}

@@ -28,22 +28,22 @@ import {
   useDeleteEnrollmentMutation,
   useGetAllEnrollmentsQuery,
 } from "@/lib/api/enrollmentsApi";
-import {
-  useCreatesessionProgressMutation,
-  useGetAllsessionProgressQuery,
-} from "@/lib/api/sessionProgressApi";
+
 import {
   useGetAllsessionsQuery,
   useDeletesessionMutation,
   useUpdatesessionMutation,
   useGetsessionByIdQuery,
 } from "@/lib/api/sessionsApi"; // Make sure this file exists at src/lib/api/sessionsApi.ts
+
+
 import {
   useCreateReviewMutation,
   useGetAllReviewsQuery,
 } from "@/lib/api/reviewsApi";
 // Inside CourseContent.tsx
 import { CreatesessionForm } from "@/components/CreatesessionForm";
+import { useCreatesessionProgressMutation, useGetAllsessionProgressQuery } from "@/lib/api/sessionProgressApi";
 
 // Assuming CourseContentProps is defined elsewhere, e.g., in types/components.ts
 interface CourseContentProps {
@@ -118,12 +118,21 @@ export function CourseContent({ courseId }: CourseContentProps) {
     error: courseError,
     refetch: refetchCourse,
   } = useGetCourseByIdQuery(parsedCourseId);
+
+  // Add missing sessions and session progress hooks
   const {
     data: allsessionsData,
     isLoading: isLoadingsessions,
     error: sessionsError,
     refetch: refetchsessions,
   } = useGetAllsessionsQuery();
+
+  const {
+    data: allsessionProgressData,
+    isLoading: isLoadingsessionProgress,
+    error: sessionProgressError,
+    refetch: refetchsessionProgress,
+  } = useGetAllsessionProgressQuery();
 
   const {
     data: reviewsData,
@@ -136,12 +145,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     error: enrollmentsError,
     refetch: refetchEnrollments,
   } = useGetAllEnrollmentsQuery();
-  const {
-    data: allsessionProgressData,
-    isLoading: isLoadingsessionProgress,
-    error: sessionProgressError,
-    refetch: refetchsessionProgress,
-  } = useGetAllsessionProgressQuery();
+
 
   const [createEnrollment] = useCreateEnrollmentMutation();
   const [deleteEnrollment] = useDeleteEnrollmentMutation();

@@ -4,7 +4,7 @@ import { JobListings } from "@/components/jobs/job-listings";
 import { JobsHeader } from "@/components/jobs/jobs-header";
 import { JobFilters } from "@/components/jobs/job-filters";
 
-function JobsPage() {
+export default function JobsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -22,5 +22,3 @@ function JobsPage() {
     </div>
   );
 }
-
-export default JobsPage;

@@ -21,7 +21,7 @@ export function JobManagement({ jobId, onClose }: JobManagementProps) {
 
   const [formData, setFormData] = useState({
     title: "",
-    company: user?.company || user?.name || "",
+    company: user?.name || "",
     location: "",
     type: "Full-time" as "Full-time" | "Part-time" | "Contract" | "Remote",
     category: "",
@@ -118,6 +118,9 @@ export function JobManagement({ jobId, onClose }: JobManagementProps) {
           ? jobs.find((j) => j.id === jobId)?.postedDate || new Date().toISOString()
           : new Date().toISOString(),
         logo: "/placeholder.svg?height=60&width=60",
+        applicationsCount: 0,
+        viewsCount: 0,
+        status: "open",
       }
 
       if (jobId) {

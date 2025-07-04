@@ -17,7 +17,22 @@ export default function SessionsPageContent() {
   } = useGetAllsessionsQuery();
   const [deleteSession] = useDeletesessionMutation();
 
-  const sessions = sessionsData || [];
+  // Extend the session type to include mentor_details
+  type MentorDetails = { name?: string };
+  type Session = {
+    id: number;
+    course_title: string;
+    mentor_details?: MentorDetails;
+    topic?: string;
+    date?: string;
+    status?: string;
+    start_time?: string;
+    end_time?: string;
+    duration?: number;
+    meeting_link?: string;
+    // ...other properties from sessionPayload
+  };
+  const sessions: Session[] = sessionsData || [];
 
   const handleCancelSession = async (sessionId: number) => {
     try {

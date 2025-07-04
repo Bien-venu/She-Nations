@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   MapPin,
   Clock,
@@ -8,19 +9,27 @@ import {
   Calendar,
   Building,
 } from "lucide-react";
-import { useAppSelector } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 
 interface JobDetailsSidebarProps {
   jobId: string;
 }
 
+interface JobSidebarData {
+  location: string;
+  type: string;
+  salary: string;
+  postedDate: string;
+  company: string;
+  logo: string;
+}
+
 export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
-  const { jobs } = useAppSelector((state) => state.jobs);
-  const job = jobs.find((j) => j.id === jobId);
+  const [job, setJob] = useState<JobSidebarData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!job) return null;
-
+  // Dummy company info and similar jobs
   const companyInfo = {
     founded: "2015",
     size: "500-1000 employees",
@@ -50,12 +59,55 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
     },
   ];
 
+  useEffect(() => {
+    async function fetchJob() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `http://localhost:8082/api/applications/opportunities/${jobId}/`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch job data");
+        }
+        const data = await response.json();
+        const jobData = data.application || data;
+
+        setJob({
+          location: jobData.location || "N/A",
+          type: jobData.type || "Full-time",
+          salary: jobData.salary || "Negotiable",
+          postedDate:
+            jobData.date_applied ||
+            jobData.postedDate ||
+            new Date().toISOString(),
+          company: jobData.company || "Unknown Company",
+          logo: jobData.logo || "/placeholder.svg",
+        });
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (jobId) {
+      fetchJob();
+    }
+  }, [jobId]);
+
+  if (loading)
+    return <div className="p-6 text-center">Loading job details...</div>;
+  if (error)
+    return <div className="p-6 text-center text-red-600">Error: {error}</div>;
+  if (!job) return <div className="p-6 text-center">Job not found.</div>;
+
   return (
     <div className="space-y-6">
       {/* Job Summary */}
       <div className="glass-effect rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4">Job Summary</h3>
         <div className="space-y-4">
+          {/* Location */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Location</span>
             <div className="flex items-center">
@@ -63,6 +115,7 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
               <span className="font-medium">{job.location}</span>
             </div>
           </div>
+          {/* Job Type */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Job Type</span>
             <div className="flex items-center">
@@ -70,6 +123,7 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
               <span className="font-medium">{job.type}</span>
             </div>
           </div>
+          {/* Salary */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Salary</span>
             <div className="flex items-center">
@@ -77,6 +131,7 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
               <span className="font-medium">{job.salary}</span>
             </div>
           </div>
+          {/* Posted Date */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Posted</span>
             <div className="flex items-center">
@@ -86,6 +141,7 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
               </span>
             </div>
           </div>
+          {/* Applicants */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Applicants</span>
             <div className="flex items-center">
@@ -101,7 +157,7 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
         <h3 className="text-lg font-semibold mb-4">About {job.company}</h3>
         <div className="flex items-center space-x-4 mb-4">
           <img
-            src={job.logo || "/placeholder.svg"}
+            src={job.logo}
             alt={job.company}
             className="w-16 h-16 rounded-lg"
           />
@@ -176,6 +232,8 @@ export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
           </button>
         </div>
       </div>
+
+      {/* Apply Now */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Apply Now</h3>
         <p className="text-gray-600 mb-6">
