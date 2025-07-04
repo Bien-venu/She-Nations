@@ -91,6 +91,12 @@ class OpportunityDetailView(APIView):
 
 
 
+from rest_framework import status, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import Application
+from .serializers import ApplicationSerializer
+
 class ApplicationListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -100,28 +106,45 @@ class ApplicationListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request, opportunity_pk):
-        data = request.data.copy()
-        data['opportunity'] = opportunity_pk
-        serializer = ApplicationSerializer(data=data, context={'request': request})
+        # Check if the user has already applied
+        if Application.objects.filter(user=request.user, opportunity_id=opportunity_pk).exists():
+            return Response(
+                {
+                    "success": False,
+                    "message": "You have already applied for this opportunity. Check your applications for more details.",
+                },
+                status=status.HTTP_200_OK  # Don't treat it as a hard error
+            )
 
+        data = request.data.copy()
+        data["opportunity"] = opportunity_pk
+
+        serializer = ApplicationSerializer(data=data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response({
-                "detail": "Application submitted successfully",
-                "application": serializer.data
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "success": True,
+                    "message": "Your application has been submitted successfully!",
+                    "application": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "success": False,
+                "message": "There was a problem with your application.",
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class ApplicationDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
-        application = get_object_or_404(Application, pk=pk)
-
-        if application.user != request.user and not request.user.is_staff:
-            return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
-
+        application = get_object_or_404(Application, pk=pk, user=request.user)
         serializer = ApplicationSerializer(application)
         return Response(serializer.data)
