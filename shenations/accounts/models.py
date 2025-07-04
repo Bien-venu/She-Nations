@@ -62,6 +62,7 @@ class UserProfile(models.Model):
         return f"{self.user.name}'s Profile"
 
 
+
 class Booking(models.Model):
     mentor = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentor_bookings'
@@ -69,8 +70,11 @@ class Booking(models.Model):
     mentee = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mentee_bookings'
     )
-    day = models.DateField()  # only date, no time
+    day = models.DateField()
+    time = models.TimeField(null=True, blank=True)  
+    title = models.CharField(max_length=255, null=True, blank=True) 
+    note = models.TextField(null=True, blank=True) 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.mentee} booked {self.mentor} for {self.day}"
+        return f"{self.mentee} booked {self.mentor} on {self.day} at {self.time or 'N/A'} - {self.title or 'No Title'}"

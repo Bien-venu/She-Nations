@@ -107,8 +107,16 @@ from rest_framework import serializers
 class BookingCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
-        fields = ['mentor', 'day']
+        fields = ['mentor', 'day', 'time', 'title', 'note']
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = self.context['request'].user  # logged-in user
         return Booking.objects.create(mentee=user, **validated_data)
+    
+class BookingSerializer(serializers.ModelSerializer):
+    mentor = serializers.StringRelatedField()
+    mentee = serializers.StringRelatedField()
+
+    class Meta:
+        model = Booking
+        fields = ['id', 'mentor', 'mentee', 'day', 'time', 'title', 'note']

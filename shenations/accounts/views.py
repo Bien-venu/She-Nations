@@ -3,8 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password, make_password
-from .models import User
-from .serializers import AccountSerializer, MentorSerializer, RegisterSerializer, LoginSerializer, UserSerializer
+from .models import Booking, User
+from .serializers import AccountSerializer, BookingSerializer, MentorSerializer, RegisterSerializer, LoginSerializer, UserSerializer
 from rest_framework import status, permissions
 from .models import UserProfile
 from .serializers import UserProfileSerializer
@@ -224,12 +224,48 @@ class BookMentorView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        serializer.save()
 
-        return Response(
-            {
-                "message": "Booking successfully created.",
-                "booking": serializer.data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({
+            "message": "Booking successfully created.",
+            "booking": serializer.data,
+        }, status=status.HTTP_201_CREATED)
+
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Booking
+
+class MentorCalendarBookingsAPIView(APIView):
+    permission_classes = [AllowAny]  # ✅ Allow public access
+
+    def get(self, request):
+        mentor_id = request.query_params.get("mentor_id")
+
+        if not mentor_id:
+            return Response({"error": "mentor_id query parameter is required."}, status=400)
+
+        bookings = Booking.objects.filter(mentor_id=mentor_id)
+
+        data = []
+        for booking in bookings:
+            start_time = booking.time.isoformat() if booking.time else "00:00:00"
+            data.append({
+                "id": booking.id,
+                "title": booking.title or "Mentorship Session",
+                "start": f"{booking.day}T{start_time}",
+                "end": f"{booking.day}T{start_time}",
+                "note": booking.note,
+                "mentor": str(booking.mentor),
+                "mentee": str(booking.mentee),
+            })
+
+        return Response(data)
+    
+class MentorBookingsListView(generics.ListAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        
+        return Booking.objects.filter()

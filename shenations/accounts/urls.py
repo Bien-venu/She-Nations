@@ -1,7 +1,7 @@
 # accounts/urls.py
 from django.urls import path
 from .views import (
-    BookMentorView, RegisterView, LoginView, MentorListAPIView,
+    BookMentorView, MentorBookingsListView, MentorCalendarBookingsAPIView, RegisterView, LoginView, MentorListAPIView,
     VerifyUserView, GetAllUsersView, UserDetailView,
     UserProfileView, UserProfileUpdateView
 )
@@ -18,4 +18,6 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='user-profile'),
     path('profile/update/', UserProfileUpdateView.as_view(), name='user-profile-update'),
     path('mentors/book/', BookMentorView.as_view(), name='book-mentor'),
+    path('calendar/bookings/', MentorCalendarBookingsAPIView.as_view(), name='mentor_calendar_bookings'),
+    path('mentor/bookings/', MentorBookingsListView.as_view(), name='mentor-bookings'),
 ]
