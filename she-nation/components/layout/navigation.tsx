@@ -15,101 +15,78 @@ import {
   Calendar,
   HelpCircle,
   Home,
-  ListChecks,
+  BookOpen,
   User2,
+  Users,
+  Settings,
+  UserCheck,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import { logout } from "@/lib/slices/authSlice";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 
-// Consolidated navigation items with role-based access
-const getNavigationItems = (role?: string) => {
+// Navigation items with role-based access
+const getNavigationItems = (
+  role: string | undefined,
+  isAuthenticated: boolean
+) => {
   const baseItems = [
     {
       name: "Home",
       href: "/",
       icon: Home,
-      roles: ["guest"],
-      requireAuth: false,
+      roles: ["admin", "Mentor", "mentee", "Expert", "company", "guest"],
     },
+  ];
+
+  const authenticatedItems = [
     {
       name: "Dashboard",
       href: "/dashboard",
       icon: Home,
-      roles: ["bab"],
-      requireAuth: true,
+      roles: ["admin", "Mentor", "mentee", "Expert", "company"],
     },
-  ];
-
-  const roleSpecificItems = [
     {
-      name: "Users",
-      href: "/users",
-      icon: User2,
-      roles: ["admin"],
-      requireAuth: true,
+      name: "Courses",
+      href: "/courses",
+      icon: BookOpen,
+      roles: ["admin", "Mentor", "mentee", "Expert"],
     },
     {
       name: "Mentorship",
       href: "/mentorship",
       icon: User2,
-      roles: ["mentee"],
-      requireAuth: true,
+      roles: [ "Mentor", "mentee"],
     },
     {
-      name: "Sessions",
-      href: "/sessions",
+      name: "Bookings",
+      href: "/bookings",
       icon: Calendar,
-      roles: ["mentee"],
-      requireAuth: true,
-    },
-    {
-      name: "Courses",
-      href: "/courses",
-      icon: ListChecks,
-      roles: ["admin", "Mentor", "mentee"],
-      requireAuth: true,
+      roles: [ "mentee"],
     },
     {
       name: "Jobs",
       href: "/jobs",
       icon: Building2,
-      roles: ["admin", "mentee"],
-      requireAuth: true,
+      roles: ["admin", "mentee", "company"],
     },
+
     {
-      name: "Forum",
-      href: "/forum",
-      icon: HelpCircle,
-      roles: ["admin", "Mentor", "mentee"],
-      requireAuth: true,
-    },
-    {
-      name: "Analytics",
-      href: "/analytics",
-      icon: BarChart3,
-      roles: ["company"],
-      requireAuth: true,
-    },
-    {
-      name: "Settings",
-      href: "/settings",
-      icon: Shield,
-      roles: ["campany"],
-      requireAuth: true,
+      name: "Users",
+      href: "/users",
+      icon: Users,
+      roles: ["admin"],
     },
   ];
 
-  // Combine base items with role-specific items
-  const allItems = [...baseItems, ...roleSpecificItems];
+  if (!isAuthenticated) {
+    return baseItems;
+  }
 
-  // Filter items based on role and authentication
-  return allItems.filter((item) => {
-    // If no role (guest), only show items that don't require auth
-    if (!role) return !item.requireAuth;
-    // Show items that match the role or are for all roles
-    return item.roles.includes(role) || item.roles.includes("guest");
-  });
+  const userRole = role || "mentee";
+  const allItems = [...baseItems, ...authenticatedItems];
+
+  return allItems.filter((item) => item.roles.includes(userRole));
 };
 
 export function Navigation() {
@@ -128,10 +105,7 @@ export function Navigation() {
     setShowProfileMenu(false);
   };
 
-  const navItems = getNavigationItems(user?.role);
-  const filteredNavItems = navItems.filter(
-    (item) => !item.requireAuth || isAuthenticated
-  );
+  const navigationItems = getNavigationItems(user?.role, isAuthenticated);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -139,7 +113,7 @@ export function Navigation() {
         return "bg-red-100 text-red-600";
       case "mentor":
         return "bg-purple-100 text-purple-600";
-      case "lecturer":
+      case "Expert":
         return "bg-blue-100 text-blue-600";
       case "company":
         return "bg-green-100 text-green-600";
@@ -164,19 +138,23 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {filteredNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`font-medium transition-colors duration-200 ${
-                  pathname === item.href
-                    ? "text-purple-600"
-                    : "text-gray-700 hover:text-purple-600"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center space-x-1 font-medium transition-colors duration-200 ${
+                    pathname === item.href
+                      ? "text-purple-600"
+                      : "text-gray-700 hover:text-purple-600"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Right side items */}
@@ -256,20 +234,14 @@ export function Navigation() {
                       <div className="py-2">
                         <Link
                           href="/profile"
-                          className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                           onClick={() => setShowProfileMenu(false)}
                         >
+                          <UserCheck className="w-4 h-4 mr-2" />
                           Profile Settings
                         </Link>
-                        {user?.role === "admin" && (
-                          <Link
-                            href="/admin"
-                            className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowProfileMenu(false)}
-                          >
-                            Admin Panel
-                          </Link>
-                        )}
+                    
+                      
                         <button
                           onClick={handleLogout}
                           className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
@@ -317,20 +289,24 @@ export function Navigation() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-white/30">
             <div className="flex flex-col space-y-2">
-              {filteredNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    pathname === item.href
-                      ? "bg-purple-100 text-purple-600"
-                      : "text-gray-700 hover:bg-white/50"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      pathname === item.href
+                        ? "bg-purple-100 text-purple-600"
+                        : "text-gray-700 hover:bg-white/50"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
               {!isAuthenticated && (
                 <div className="flex flex-col space-y-2 pt-4 border-t border-white/30">
                   <Link

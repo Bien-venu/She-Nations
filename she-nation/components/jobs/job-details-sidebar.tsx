@@ -1,191 +1,162 @@
 "use client";
 
-import {
-  MapPin,
-  Clock,
-  DollarSign,
-  Users,
-  Calendar,
-  Building,
-} from "lucide-react";
-import { useAppSelector } from "@/lib/hooks";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useApplyToOpportunityMutation } from "@/lib/api/opportunitiesApi";
+import { useAppSelector } from "@/lib/hooks";
+import { JobApplicationModal } from "./job-application-modal";
+import { MapPin, Calendar, Clock, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import type { Opportunity } from "@/lib/types/api";
 
 interface JobDetailsSidebarProps {
-  jobId: string;
+  opportunity: Opportunity;
 }
 
-export function JobDetailsSidebar({ jobId }: JobDetailsSidebarProps) {
-  const { jobs } = useAppSelector((state) => state.jobs);
-  const job = jobs.find((j) => j.id === jobId);
+export function JobDetailsSidebar({ opportunity }: JobDetailsSidebarProps) {
+  const { user } = useAppSelector((state) => state.auth);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [applyToOpportunity, { isLoading: isApplying }] =
+    useApplyToOpportunityMutation();
 
-  if (!job) return null;
+  const isDeadlinePassed = new Date(opportunity.deadline) < new Date();
+  const canApply =
+    opportunity.is_active && !isDeadlinePassed && user?.role === "mentee";
 
-  const companyInfo = {
-    founded: "2015",
-    size: "500-1000 employees",
-    industry: "Technology",
-    website: "www.company.com",
-    headquarters: "San Francisco, CA",
+  const handleApplicationSubmit = async (applicationData: any) => {
+    try {
+      await applyToOpportunity({
+        opportunityId: opportunity.id,
+        payload: applicationData,
+      }).unwrap();
+
+      toast.success("Application submitted successfully!");
+      setShowApplicationModal(false);
+    } catch (error: any) {
+      console.error("Error submitting application:", error);
+      toast.error(
+        error?.data?.detail || "Failed to submit application. Please try again."
+      );
+    }
   };
-
-  const similarJobs = [
-    {
-      id: "1",
-      title: "Senior Developer",
-      company: "TechCorp",
-      salary: "$110k - $150k",
-    },
-    {
-      id: "2",
-      title: "Lead Engineer",
-      company: "InnovateLab",
-      salary: "$120k - $160k",
-    },
-    {
-      id: "3",
-      title: "Software Architect",
-      company: "FutureTech",
-      salary: "$130k - $170k",
-    },
-  ];
 
   return (
     <div className="space-y-6">
-      {/* Job Summary */}
-      <div className="glass-effect rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Job Summary</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Location</span>
-            <div className="flex items-center">
-              <MapPin className="w-4 h-4 mr-1" />
-              <span className="font-medium">{job.location}</span>
+      {/* Quick Apply Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Apply for this Position</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!user && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+                <p className="text-sm text-yellow-800">
+                  Please log in to apply for this position
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {user?.role !== "mentee" && user && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-blue-600 mr-2" />
+                <p className="text-sm text-blue-800">
+                  Only mentees can apply for job opportunities
+                </p>
+              </div>
+            </div>
+          )}
+
+          {isDeadlinePassed && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
+                <p className="text-sm text-red-800">
+                  Application deadline has passed
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!opportunity.is_active && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-gray-600 mr-2" />
+                <p className="text-sm text-gray-800">
+                  This job posting is no longer active
+                </p>
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={() => setShowApplicationModal(true)}
+            disabled={!canApply || isApplying}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            {canApply ? "Apply Now" : "Cannot Apply"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Job Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Job Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Job Type</span>
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              <span className="font-medium">{job.type}</span>
-            </div>
+            <Badge variant="secondary">{opportunity.type}</Badge>
           </div>
+
           <div className="flex items-center justify-between">
-            <span className="text-gray-600">Salary</span>
-            <div className="flex items-center">
-              <DollarSign className="w-4 h-4 mr-1" />
-              <span className="font-medium">{job.salary}</span>
+            <span className="text-gray-600">Location</span>
+            <div className="flex items-center text-sm">
+              <MapPin className="w-4 h-4 mr-1" />
+              {opportunity.location}
             </div>
           </div>
+
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Posted</span>
-            <div className="flex items-center">
+            <div className="flex items-center text-sm">
+              <Clock className="w-4 h-4 mr-1" />
+              {new Date(opportunity.created_at).toLocaleDateString()}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Deadline</span>
+            <div className="flex items-center text-sm">
               <Calendar className="w-4 h-4 mr-1" />
-              <span className="font-medium">
-                {new Date(job.postedDate).toLocaleDateString()}
-              </span>
+              {new Date(opportunity.deadline).toLocaleDateString()}
             </div>
           </div>
+
           <div className="flex items-center justify-between">
-            <span className="text-gray-600">Applicants</span>
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              <span className="font-medium">23 candidates</span>
-            </div>
+            <span className="text-gray-600">Status</span>
+            <Badge variant={opportunity.is_active ? "default" : "secondary"}>
+              {opportunity.is_active ? "Active" : "Inactive"}
+            </Badge>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Company Info */}
-      <div className="glass-effect rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">About {job.company}</h3>
-        <div className="flex items-center space-x-4 mb-4">
-          <img
-            src={job.logo || "/placeholder.svg"}
-            alt={job.company}
-            className="w-16 h-16 rounded-lg"
-          />
-          <div>
-            <h4 className="font-semibold">{job.company}</h4>
-            <p className="text-sm text-gray-600">{companyInfo.industry}</p>
-          </div>
-        </div>
-
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Founded</span>
-            <span className="font-medium">{companyInfo.founded}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Company Size</span>
-            <span className="font-medium">{companyInfo.size}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Headquarters</span>
-            <span className="font-medium">{companyInfo.headquarters}</span>
-          </div>
-        </div>
-
-        <p className="text-gray-700 text-sm mb-4">
-          A leading technology company focused on innovation and creating
-          solutions that make a difference in people's lives.
-        </p>
-
-        <button className="w-full px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors">
-          <Building className="w-4 h-4 mr-2 inline" />
-          View Company Profile
-        </button>
-      </div>
-
-      {/* Similar Jobs */}
-      <div className="glass-effect rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Similar Jobs</h3>
-        <div className="space-y-4">
-          {similarJobs.map((similarJob) => (
-            <div
-              key={similarJob.id}
-              className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors cursor-pointer"
-            >
-              <h4 className="font-medium text-gray-900 mb-1">
-                {similarJob.title}
-              </h4>
-              <p className="text-sm text-gray-600 mb-2">{similarJob.company}</p>
-              <p className="text-sm font-medium text-purple-600">
-                {similarJob.salary}
-              </p>
-            </div>
-          ))}
-        </div>
-        <button className="w-full mt-4 px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
-          View More Jobs
-        </button>
-      </div>
-
-      {/* Share Job */}
-      <div className="glass-effect rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Share This Job</h3>
-        <div className="flex space-x-2">
-          <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-            LinkedIn
-          </button>
-          <button className="flex-1 px-3 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition-colors text-sm">
-            Twitter
-          </button>
-          <button className="flex-1 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
-            Email
-          </button>
-        </div>
-      </div>
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Apply Now</h3>
-        <p className="text-gray-600 mb-6">
-          Ready to take the next step in your career? Apply for this exciting
-          opportunity today!
-        </p>
-        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-          Submit Application
-        </Button>
-      </div>
+      {/* Application Modal */}
+      {showApplicationModal && (
+        <JobApplicationModal
+          opportunity={opportunity}
+          onClose={() => setShowApplicationModal(false)}
+          onSubmit={handleApplicationSubmit}
+          isLoading={isApplying}
+        />
+      )}
     </div>
   );
 }

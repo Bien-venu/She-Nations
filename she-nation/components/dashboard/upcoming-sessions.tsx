@@ -62,7 +62,7 @@ export function UpcomingSessions() {
   }
 
   return (
-    <div className="glass-effect rounded-xl p-6">
+    <div className="glass-effect rounded-xl p-6 hidden">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold font-poppins text-gray-900">Upcoming Sessions</h3>
         <button onClick={handleViewAllSessions} className="text-purple-600 hover:text-purple-700 text-sm font-medium">

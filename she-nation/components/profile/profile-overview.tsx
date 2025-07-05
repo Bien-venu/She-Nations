@@ -1,51 +1,16 @@
-"use client"
+"use client";
 
-import { MapPin, Calendar, Award, Users, BookOpen } from "lucide-react"
-import { useAppSelector } from "@/lib/hooks"
+import { MapPin, Calendar } from "lucide-react";
+import { useAppSelector } from "@/lib/hooks";
+import { useGetMentorBookingsQuery } from "@/lib/api/bookingApi";
+import { useGetAllCoursesQuery } from "@/lib/api/coursesApi";
 
 export function ProfileOverview() {
-  const { user } = useAppSelector((state) => state.auth)
+  const { user } = useAppSelector((state) => state.auth);
+  const { data: bookings = [] } = useGetMentorBookingsQuery();
+  const { data: coursesData } = useGetAllCoursesQuery({});
 
-  if (!user) return null
-
-  const skills = [
-    "Leadership",
-    "Communication",
-    "Project Management",
-    "Strategic Planning",
-    "Team Building",
-    "Problem Solving",
-  ]
-  const interests = [
-    "Technology",
-    "Innovation",
-    "Mentoring",
-    "Professional Development",
-    "Networking",
-    "Continuous Learning",
-  ]
-
-  const recentActivity = [
-    { type: "course", title: "Completed Advanced Leadership Course", date: "2 days ago" },
-    { type: "forum", title: "Posted in Career Development", date: "1 week ago" },
-    { type: "mentorship", title: "Started mentoring Sarah Johnson", date: "2 weeks ago" },
-    { type: "achievement", title: "Earned Communication Expert badge", date: "3 weeks ago" },
-  ]
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "course":
-        return <BookOpen className="w-4 h-4 text-blue-600" />
-      case "forum":
-        return <Users className="w-4 h-4 text-purple-600" />
-      case "mentorship":
-        return <Users className="w-4 h-4 text-green-600" />
-      case "achievement":
-        return <Award className="w-4 h-4 text-yellow-600" />
-      default:
-        return <Calendar className="w-4 h-4 text-gray-600" />
-    }
-  }
+  if (!user) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -55,36 +20,32 @@ export function ProfileOverview() {
         <div className="glass-effect rounded-xl p-6">
           <h3 className="text-xl font-semibold mb-4">About</h3>
           <p className="text-gray-700 leading-relaxed">
-            {user.bio ||
-              "Passionate professional with a strong commitment to excellence and continuous growth. I believe in the power of collaboration, innovation, and lifelong learning to drive meaningful change and create positive impact in both personal and professional spheres."}
+            {user.bio || "No bio provided yet."}
           </p>
         </div>
 
-        {/* Skills */}
+        {/* User Information */}
         <div className="glass-effect rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Skills & Expertise</h3>
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill) => (
-              <span key={skill} className="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="glass-effect rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-start space-x-3">
-                <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
-                <div className="flex-1">
-                  <p className="text-gray-900 font-medium">{activity.title}</p>
-                  <p className="text-sm text-gray-500">{activity.date}</p>
-                </div>
-              </div>
-            ))}
+          <h3 className="text-xl font-semibold mb-4">Profile Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-600">
+                Full Name
+              </label>
+              <p className="text-gray-900">{user.name || "Not provided"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Email</label>
+              <p className="text-gray-900">{user.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Phone</label>
+              <p className="text-gray-900">{user.phone || "Not provided"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Role</label>
+              <p className="text-gray-900 capitalize">{user.role}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -97,26 +58,67 @@ export function ProfileOverview() {
           <div className="space-y-3">
             <div className="flex items-center text-gray-600">
               <MapPin className="w-4 h-4 mr-3" />
-              <span className="text-sm">{user.location || "Location not set"}</span>
+              <span className="text-sm">
+                {user.location || "Location not set"}
+              </span>
             </div>
             <div className="flex items-center text-gray-600">
               <Calendar className="w-4 h-4 mr-3" />
-              <span className="text-sm">Joined {new Date(user.joinDate || Date.now()).toLocaleDateString()}</span>
+              <span className="text-sm">
+                Joined{" "}
+                {new Date(
+                  user.date_registered || Date.now()
+                ).toLocaleDateString()}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Interests */}
-        <div className="glass-effect rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4">Interests</h3>
-          <div className="flex flex-wrap gap-2">
-            {interests.map((interest) => (
-              <span key={interest} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
-                {interest}
-              </span>
-            ))}
+        {/* Booking Stats - Only show if user has bookings */}
+        {bookings.length > 0 && (
+          <div className="glass-effect rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Booking Statistics</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Bookings</span>
+                <span className="font-semibold">{bookings.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  Confirmed Sessions
+                </span>
+                <span className="font-semibold">
+                  {bookings.filter((b) => b.time).length}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Pending Sessions</span>
+                <span className="font-semibold">
+                  {bookings.filter((b) => !b.time).length}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Course Stats - Only show if user has course data */}
+        {coursesData &&
+          coursesData.results &&
+          coursesData.results.length > 0 && (
+            <div className="glass-effect rounded-xl p-6">
+              <h3 className="text-lg font-semibold mb-4">Course Statistics</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    Available Courses
+                  </span>
+                  <span className="font-semibold">
+                    {coursesData.results.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* Quick Actions */}
         <div className="glass-effect rounded-xl p-6">
@@ -135,5 +137,5 @@ export function ProfileOverview() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -184,11 +184,10 @@ export function SignupForm() {
               <SelectValue placeholder="Select your role" />
             </SelectTrigger>
             <SelectContent className="">
+              <SelectItem value="mentee">Mentee</SelectItem>
               <SelectItem value="Mentor">Mentor</SelectItem>
-              <SelectItem value="lecturer">
-                Lecturer (Want to teach courses)
-              </SelectItem>
-              <SelectItem value="company">Company (Hiring talent)</SelectItem>
+              <SelectItem value="Expert">Expert</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
         </div>

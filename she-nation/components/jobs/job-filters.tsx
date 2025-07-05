@@ -29,7 +29,9 @@ export function JobFilters() {
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">Filter Jobs</h3>
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        Filter opportunity
+      </h3>
       <div className="space-y-4">
         <div>
           <Label
@@ -48,10 +50,10 @@ export function JobFilters() {
         </div>
 
         <div>
-          <Label className="text-sm font-medium text-gray-700">Job Type</Label>
+          <Label className="text-sm font-medium text-gray-700">Opportunity Type</Label>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select job type" />
+              <SelectValue placeholder="Select opportunity type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>

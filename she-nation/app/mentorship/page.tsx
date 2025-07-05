@@ -1,95 +1,194 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { useState } from "react";
+import { Search, Filter, Users, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { MentorGrid } from "@/components/mentorship/mentor-grid";
+import { useGetAllMentorsQuery } from "@/lib/api/mentorsApi";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-function MentorshipPage() {
+export default function MentorshipPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [mentors, setMentors] = useState([]);
-
-  const categories = ["Engineering", "Marketing", "Business", "Education"];
-
-  useEffect(() => {
-    fetch("http://localhost:8082/api/auth/mentors/")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched mentors:", data);
-        setMentors(data);
-      })
-      .catch((err) => console.error("Failed to fetch mentors", err));
-  }, []);
-
-  const filteredMentors = mentors.filter((mentor: any) => {
-    const matchesSearch =
-      mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mentor.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (mentor.company &&
-        mentor.company.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesCategory =
-      categoryFilter === "all" || !categoryFilter
-        ? true
-        : mentor.category === categoryFilter;
-
-    return matchesSearch && matchesCategory;
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    expertise: [] as string[],
+    priceRange: [0, 1000] as [number, number],
+    rating: 0,
+    location: "",
+    availability: "",
   });
 
+  const { data: mentors = [], isLoading, error } = useGetAllMentorsQuery();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="text-red-500 mb-4">
+                <Users className="w-16 h-16 mx-auto" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Failed to Load Mentors
+              </h2>
+              <p className="text-gray-600 mb-4">
+                There was an error loading the mentor list.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const handleExpertiseFilter = (expertise: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      expertise: prev.expertise.includes(expertise)
+        ? prev.expertise.filter((e) => e !== expertise)
+        : [...prev.expertise, expertise],
+    }));
+  };
+
+  // Get unique expertise areas from mentors
+  const allExpertise = Array.from(
+    new Set(mentors.flatMap((mentor) => mentor.expertise))
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Find a Mentor
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Find Your Mentor
           </h1>
-          <p className="text-gray-600">
-            Connect with experienced professionals for guidance and support
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Connect with experienced professionals who can guide you on your
+            career journey
           </p>
         </div>
 
+
         {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Search & Filter</span>
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Search */}
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-                placeholder="Search mentors..."
+                type="text"
+                placeholder="Search mentors by name, expertise, or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+
+            {/* Filters */}
+            {showFilters && (
+              <div className="space-y-4 pt-4 border-t">
+                {/* Expertise Filter */}
+                {allExpertise.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expertise
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {allExpertise.map((expertise) => (
+                        <Badge
+                          key={expertise}
+                          variant={
+                            filters.expertise.includes(expertise)
+                              ? "default"
+                              : "outline"
+                          }
+                          className="cursor-pointer"
+                          onClick={() => handleExpertiseFilter(expertise)}
+                        >
+                          {expertise}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Location Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Location
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Filter by location..."
+                    value={filters.location}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                {/* Clear Filters */}
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    setFilters({
+                      expertise: [],
+                      priceRange: [0, 1000],
+                      rating: 0,
+                      location: "",
+                      availability: "",
+                    })
+                  }
+                >
+                  Clear All Filters
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Mentor Grid */}
-        <MentorGrid mentors={filteredMentors} />
+        <MentorGrid
+          mentors={mentors}
+          searchQuery={searchQuery}
+          filters={filters}
+        />
       </div>
     </div>
   );
 }
-
-export default MentorshipPage;

@@ -1,37 +1,66 @@
 "use client";
 
-import React, { use } from "react"; // <-- import use
+import { useParams } from "next/navigation";
 import { JobDetailsHeader } from "@/components/jobs/job-details-header";
 import { JobDetailsContent } from "@/components/jobs/job-details-content";
 import { JobDetailsSidebar } from "@/components/jobs/job-details-sidebar";
-import { AuthGuard } from "@/components/auth/auth-guard";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useGetOpportunityByIdQuery } from "@/lib/api/opportunitiesApi";
+import { Card, CardContent } from "@/components/ui/card";
 
-interface JobPageProps {
-  params: Promise<{ id: string }>; // params is now a Promise
-}
+export default function JobDetailsPage() {
+  const params = useParams();
+  const jobId = Number.parseInt(params.id as string);
 
-function JobPage({ params }: JobPageProps) {
-  const paramsResolved = use(params); // unwrap the Promise
-  const { id } = paramsResolved;
+  const {
+    data: opportunity,
+    isLoading,
+    error,
+  } = useGetOpportunityByIdQuery(jobId);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !opportunity) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Job Not Found
+              </h1>
+              <p className="text-gray-600">
+                The job opportunity you're looking for doesn't exist or has been
+                removed.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-gray-50 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <JobDetailsHeader jobId={id} />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <JobDetailsHeader opportunity={opportunity} />
 
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-              <JobDetailsContent jobId={id} />
-            </div>
-            <div className="lg:col-span-1">
-              <JobDetailsSidebar jobId={id} />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          <div className="lg:col-span-2">
+            <JobDetailsContent opportunity={opportunity} />
+          </div>
+
+          <div className="lg:col-span-1">
+            <JobDetailsSidebar opportunity={opportunity} />
           </div>
         </div>
       </div>
-    </AuthGuard>
+    </div>
   );
 }
-
-export default JobPage;

@@ -1,14 +1,14 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLoginMutation } from "@/lib/api/authApi";
-import { useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { loginSuccess, loginFailure, loginStart } from "@/lib/slices/authSlice";
 import toast from "react-hot-toast";
 
@@ -19,6 +19,27 @@ export function LoginForm() {
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+
+  // Role-based redirect mapping
+  const getRoleBasedRoute = (role: string) => {
+    const roleRoutes = {
+      admin: "/dashboard",
+      mentor: "/dashboard",
+      lecturer: "/dashboard",
+      company: "/dashboard",
+      mentee: "/dashboard",
+    };
+    return roleRoutes[role as keyof typeof roleRoutes] || "/dashboard";
+  };
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const targetRoute = getRoleBasedRoute(user.role);
+      router.push(targetRoute);
+    }
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,16 +64,7 @@ export function LoginForm() {
       toast.success("Login successful!");
 
       // Role-based redirect
-      const roleRoutes = {
-        admin: "/dashboard",
-        mentor: "/dashboard",
-        lecturer: "/dashboard",
-        company: "/dashboard",
-        mentee: "/dashboard",
-      };
-
-      const targetRoute =
-        roleRoutes[result.user.role as keyof typeof roleRoutes] || "/dashboard";
+      const targetRoute = getRoleBasedRoute(result.user.role);
       router.push(targetRoute);
     } catch (error: any) {
       const errorMessage =
@@ -61,6 +73,18 @@ export function LoginForm() {
       toast.error(errorMessage);
     }
   };
+
+  // Don't render form if already authenticated (prevents flash)
+  if (isAuthenticated && user) {
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">

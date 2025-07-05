@@ -1,152 +1,283 @@
 "use client";
 
+import type React from "react";
+
 import { useState } from "react";
-import { X, DollarSign } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { booksession } from "@/lib/slices/mentorshipSlice";
-import { addNotification } from "@/lib/slices/notificationsSlice";
+import { Calendar, Clock, User, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useBookMentorMutation } from "@/lib/api/bookingApi";
+import { useAppSelector } from "@/lib/hooks";
+import { toast } from "sonner";
+import type { Mentor } from "@/lib/types/api";
 
 interface MentorBookingModalProps {
+  isOpen: boolean;
   onClose: () => void;
-  mentorId: string | null;
+  mentor: Mentor | null;
 }
 
+const TIME_SLOTS = [
+  "09:00:00",
+  "09:30:00",
+  "10:00:00",
+  "10:30:00",
+  "11:00:00",
+  "11:30:00",
+  "12:00:00",
+  "12:30:00",
+  "13:00:00",
+  "13:30:00",
+  "14:00:00",
+  "14:30:00",
+  "15:00:00",
+  "15:30:00",
+  "16:00:00",
+  "16:30:00",
+  "17:00:00",
+  "17:30:00",
+];
+
 export function MentorBookingModal({
+  isOpen,
   onClose,
-  mentorId,
+  mentor,
 }: MentorBookingModalProps) {
-  const { selectedMentor } = useAppSelector((state) => state.mentorship);
-  const dispatch = useAppDispatch();
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [topic, setTopic] = useState("");
+  const [sessionTitle, setSessionTitle] = useState("");
+  const [sessionNote, setSessionNote] = useState("");
+  const [bookMentor, { isLoading }] = useBookMentorMutation();
+  const { user } = useAppSelector((state) => state.auth);
 
-  if (!selectedMentor) return null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const handleBooking = () => {
-    if (selectedDate && selectedTime && topic) {
-      dispatch(
-        booksession({
-          mentorId: selectedMentor.id,
-          mentorName: selectedMentor.name,
-          date: selectedDate,
-          time: selectedTime,
-          status: "scheduled",
-          topic,
-        })
-      );
+    if (!mentor || !selectedDate || !selectedTime || !sessionTitle.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
 
-      dispatch(
-        addNotification({
-          title: "session Booked Successfully",
-          message: `Your session with ${selectedMentor.name} has been scheduled for ${selectedDate} at ${selectedTime}`,
-          type: "success",
-          read: false,
-        })
-      );
+    // Validate date is not in the past
+    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const now = new Date();
+    if (selectedDateTime < now) {
+      toast.error("Cannot book sessions in the past");
+      return;
+    }
 
+    console.log("Booking submission:", {
+      mentor: mentor.id,
+      day: selectedDate,
+      time: selectedTime,
+      title: sessionTitle,
+      note: sessionNote,
+      userEmail: user?.email,
+      userRole: user?.role,
+    });
+
+    try {
+      const result = await bookMentor({
+        mentor: mentor.id,
+        day: selectedDate,
+        time: selectedTime,
+        title: sessionTitle,
+        note: sessionNote,
+      }).unwrap();
+
+      console.log("Booking success:", result);
+
+      toast.success("Booking created successfully!");
+
+      // Reset form
+      setSelectedDate("");
+      setSelectedTime("");
+      setSessionTitle("");
+      setSessionNote("");
       onClose();
+    } catch (error: any) {
+      console.error("Booking error:", error);
+      toast.error(
+        error?.data?.message || error?.message || "Failed to create booking"
+      );
     }
   };
 
+  const formatTimeForDisplay = (time: string) => {
+    try {
+      const [hours, minutes] = time.split(":");
+      const hour = Number.parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return time;
+    }
+  };
+
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0];
+  };
+
+  if (!mentor) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold font-poppins">Book session</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-purple-600" />
+            Book Session with {mentor.name}
+          </DialogTitle>
+        </DialogHeader>
 
-          <div className="flex items-center space-x-4 mb-6 p-4 bg-gray-50 rounded-lg">
-            <img
-              src={selectedMentor.avatar || "/placeholder.svg"}
-              alt={selectedMentor.name}
-              className="w-12 h-12 rounded-full"
-            />
-            <div>
-              <h3 className="font-semibold">{selectedMentor.name}</h3>
-              <p className="text-sm text-gray-600">
-                {selectedMentor.experience}
-              </p>
-              <div className="flex items-center text-sm text-gray-600 mt-1">
-                <DollarSign className="w-4 h-4 mr-1" />${selectedMentor.price}
-                /hour
-              </div>
+        {/* Mentor Info */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-purple-600 font-semibold text-lg">
+                {mentor.name.charAt(0).toUpperCase()}
+              </span>
             </div>
-          </div>
-
-          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Date
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <h3 className="font-semibold text-gray-900">{mentor.name}</h3>
+              <p className="text-sm text-gray-600">{mentor.title}</p>
+              <p className="text-sm text-gray-500">{mentor.email}</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Available Time Slots
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {["10:00 AM", "2:00 PM", "4:00 PM", "6:00 PM"].map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      selectedTime === time
-                        ? "bg-purple-100 border-purple-500 text-purple-700"
-                        : "border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                session Topic
-              </label>
-              <textarea
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="What would you like to discuss in this session?"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex space-x-3 mt-6">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleBooking}
-              disabled={!selectedDate || !selectedTime || !topic}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-            >
-              Book session
-            </button>
           </div>
         </div>
-      </div>
-    </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Date Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="date" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Select Date *
+            </Label>
+            <Input
+              id="date"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={getTodayDate()}
+              required
+              className="w-full"
+            />
+            {selectedDate && (
+              <p className="text-sm text-gray-600">
+                Selected:{" "}
+                {new Date(selectedDate + "T00:00:00").toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
+              </p>
+            )}
+          </div>
+
+          {/* Time Selection */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Select Time *
+            </Label>
+            <Select
+              value={selectedTime}
+              onValueChange={setSelectedTime}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a time slot" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_SLOTS.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {formatTimeForDisplay(time)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Session Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Session Title *
+            </Label>
+            <Input
+              id="title"
+              type="text"
+              value={sessionTitle}
+              onChange={(e) => setSessionTitle(e.target.value)}
+              placeholder="e.g., Career Guidance Session"
+              required
+              className="w-full"
+            />
+          </div>
+
+          {/* Session Note */}
+          <div className="space-y-2">
+            <Label htmlFor="note" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Session Notes
+            </Label>
+            <Textarea
+              id="note"
+              value={sessionNote}
+              onChange={(e) => setSessionNote(e.target.value)}
+              placeholder="e.g., Focus on resume review and interview tips"
+              rows={3}
+              className="w-full"
+            />
+          </div>
+
+          {/* Debug Info */}
+          <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+            <strong>Debug Info:</strong>
+            <br />
+            User: {user?.email} ({user?.role})<br />
+            Mentor ID: {mentor.id}
+            <br />
+            Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 bg-transparent"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading} className="flex-1 bg-black text-white">
+              {isLoading ? "Booking..." : "Book Session"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
